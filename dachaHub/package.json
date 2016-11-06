@@ -1,0 +1,12 @@
+{
+  "name": "dacha-hub",
+  "version": "0.0.0",
+  "description": "dachaHub",
+  "main": "app.js",
+  "author": {
+    "name": "Volma"
+  },
+  "dependencies": {
+    "es6-promise": "^3.2.1"
+  }
+}

@@ -1,0 +1,12 @@
+﻿{
+    "compilerOptions": {
+                "sourceMap": true
+    },
+  "files": [
+    "server.ts",
+    "./Scripts/typings/node/node.d.ts",
+    "./Scripts/typings/es6-promise/es6-promise.d.ts",
+    "./app/router.ts",
+    "./app/camera.ts"
+  ]
+}
