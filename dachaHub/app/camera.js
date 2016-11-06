@@ -1,10 +1,11 @@
 "use strict";
 var prom = require('es6-promise');
 var spawn = require('child_process').spawn;
+var exec = require('child_process').exec;
 var Camera = (function () {
     function Camera() {
     }
-    Camera.prototype.start = function () {
+    Camera.prototype.startStream = function () {
         var raspistill = spawn('raspistill', ['-w', '640', '-h', '480', '-q', '5', '-o', '/tmp/stream/pic.jpg',
             '-tl', '100', '-t', '9999999', '-th', '0:0:0', '-n']);
         //raspistill -w 640 -h 480 -q 5 -o /tmp/stream/pic.jpg -tl 100 -t 9999999 -th 0:0:0 -n
@@ -21,14 +22,9 @@ var Camera = (function () {
             });
         });
     };
-    Camera.prototype.getTimestamp = function () {
-        var date = new Date();
-        return date.getMinutes() + ':' + date.getSeconds() + ':' + date.getMilliseconds() + ': ';
-    };
     Camera.prototype.launch = function () {
         if (!Camera.raspistill) {
-            console.log(this.getTimestamp() + 'Starting...');
-            Camera.raspistill = spawn('raspistill', ['-w', '640', '-h', '480', '-q', '5', '-o', '-', '-n', '-t', '0', '-s']);
+            Camera.startRaspistillProcess();
         }
     };
     Camera.prototype.shutdown = function () {
@@ -37,20 +33,52 @@ var Camera = (function () {
             Camera.raspistill = null;
         }
     };
+    Camera.prototype.configure = function (options) {
+        Camera.cameraOptions = options;
+        Camera.startRaspistillProcess();
+    };
     Camera.prototype.sendSnapshot = function (httpResponse) {
-        var _this = this;
         if (!Camera.raspistill) {
-            console.log(this.getTimestamp() + 'Starting...');
-            Camera.raspistill = spawn('raspistill', ['-w', '640', '-h', '480', '-q', '5', '-o', '-', '-n', '-t', '0', '-s']);
+            Camera.startRaspistillProcess();
         }
         Camera.raspistill.stdout.on('data', function (data) {
             httpResponse.write(data, 'base64');
-        });
-        Camera.raspistill.stdout.on('close', function (code) {
-            console.log(_this.getTimestamp() + 'Closed...');
             httpResponse.end();
         });
-        Camera.raspistill.kill('SIGUSR1');
+        Camera.raspistill.stdout.on('close', function (code) {
+            Camera.log('Closed...');
+            httpResponse.end();
+        });
+        Camera.raspistill.stderr.on('data', function (data) {
+            Camera.error(data);
+        });
+        try {
+            Camera.raspistill.kill('SIGUSR1');
+        }
+        catch (Error) {
+            console.log("Caught: " + Error);
+            throw Error;
+        }
+    };
+    Camera.log = function (message) {
+        console.log(Camera.getTimestamp() + ' ' + message);
+    };
+    Camera.error = function (message) {
+        console.error(Camera.getTimestamp() + ' ' + message);
+    };
+    Camera.getTimestamp = function () {
+        var date = new Date();
+        return date.getMinutes() + ':' + date.getSeconds() + ':' + date.getMilliseconds() + ': ';
+    };
+    Camera.startRaspistillProcess = function () {
+        console.log(Camera.getTimestamp() + 'Starting...');
+        //Camera.raspistill = spawn('raspistill', ['-w', '640', '-h', '480', '-q', '5', '-o', '/home/samba-share/pic%04d.jpg', '-t', '0', '-s']);  
+        if (!Camera.cameraOptions) {
+            Camera.raspistill = spawn('raspistill', ['-w', '640', '-h', '480', '-q', '5', '-o', '-', '-n', '-t', '0', '-s']);
+        }
+        else {
+            Camera.raspistill = spawn('raspistill', ['-w', '640', '-h', '480', '-q', Camera.cameraOptions.quality, '-o', '-', '-n', '-t', '0', '-s']);
+        }
     };
     Camera.raspistill = null;
     return Camera;

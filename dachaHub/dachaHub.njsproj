@@ -36,6 +36,7 @@
   <ItemGroup>
     <Content Include="tsconfig.json" />
     <TypeScriptCompile Include="app\camera.ts" />
+    <TypeScriptCompile Include="app\cameraOptions.ts" />
     <TypeScriptCompile Include="app\router.ts" />
     <TypeScriptCompile Include="Scripts\typings\es6-promise\es6-promise.d.ts" />
     <TypeScriptCompile Include="Scripts\typings\node\node.d.ts" />
