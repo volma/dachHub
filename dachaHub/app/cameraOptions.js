@@ -2,6 +2,8 @@
 var CameraOptions = (function () {
     function CameraOptions() {
         this.quality = 5;
+        this.width = 640;
+        this.height = 480;
     }
     return CameraOptions;
 }());

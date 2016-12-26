@@ -15,15 +15,16 @@ var Router = (function () {
         res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, PUT, POST, DELETE');
         res.setHeader('Access-Control-Allow-Headers', '*');
         switch (reqUrl.pathname) {
-            case '/start':
-                new camera.Camera().launch();
-                res.writeHead(200, { 'Content-Type': 'text/plain' });
-                res.end('OK');
-                break;
             case '/config':
-                new camera.Camera().configure({ quality: reqUrl.query['quality'] });
+                console.log("Config " + req.method);
+                var options = {
+                    quality: reqUrl.query['quality'],
+                    width: reqUrl.query['width'],
+                    height: reqUrl.query['height']
+                };
+                new camera.Camera().configure(options);
                 res.writeHead(200, { 'Content-Type': 'text/plain' });
-                res.end('OK');
+                res.end('Initialized');
                 break;
             case '/stop':
                 new camera.Camera().shutdown();
