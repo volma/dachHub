@@ -20,6 +20,33 @@ var Camera = (function () {
         Camera.cameraOptions = options;
         Camera.startRaspistillProcess();
     };
+    Camera.prototype.test = function (httpResponse) {
+        if (!Camera.raspistill) {
+            Camera.startRaspistillProcess();
+        }
+        var dataListener = function (data) {
+            var tryArr = data;
+            if (tryArr) {
+                console.log(tryArr.length);
+                if (tryArr.length > 0) {
+                    console.log(tryArr[tryArr.length - 1]);
+                    console.log(tryArr[tryArr.length - 2]);
+                }
+            }
+            httpResponse.write(data, 'base64');
+            //httpResponse.end();
+            Camera.log("Sent out image. Listeners: " + Camera.raspistill.stdout.listeners.length);
+            //Camera.raspistill.stdout.removeListener('data', dataListener);
+        };
+        Camera.raspistill.stdout.on('data', dataListener);
+        try {
+            Camera.raspistill.kill('SIGUSR1');
+        }
+        catch (Error) {
+            console.log("Caught: " + Error);
+            throw Error;
+        }
+    };
     Camera.startRaspistillProcess = function () {
         console.log(Camera.getTimestamp() + 'Starting...');
         //Camera.raspistill = spawn('raspistill', ['-w', '640', '-h', '480', '-q', '5', '-o', '/home/samba-share/pic%04d.jpg', '-t', '0', '-s']);  
@@ -34,28 +61,36 @@ var Camera = (function () {
                 '-o', '-',
                 '-n',
                 '-t', '0',
+                '-th', 'none',
                 '-s']);
         }
+        Camera.raspistill
+            .on('close', function (code) {
+            Camera.log('Closed...');
+        });
+        Camera.raspistill.stderr
+            .on('data', function (e) {
+            Camera.error(e);
+        });
     };
     Camera.prototype.sendSnapshot = function (httpResponse) {
         if (!Camera.raspistill) {
             Camera.startRaspistillProcess();
-            Camera.raspistill
-                .on('close', function (code) {
-                Camera.log('Closed...');
-            });
-            Camera.raspistill.stderr
-                .on('data', function (e) {
-                Camera.error(e);
-            });
         }
         var dataListener = function (data) {
             httpResponse.write(data, 'base64');
-            httpResponse.end();
-            Camera.log("Sent out image. Listeners: " + Camera.raspistill.stdout.listeners.length);
-            Camera.raspistill.stdout.removeListener('data', dataListener);
+            var tryArr = data;
+            if (tryArr) {
+                console.log('Sent out chunk, length = ' + tryArr.length);
+                if (tryArr.length < 2 || (tryArr[tryArr.length - 1] == 217 && tryArr[tryArr.length - 2] == 255)) {
+                    //End of file
+                    httpResponse.end();
+                    Camera.raspistill.stdout.removeListener('data', dataListener);
+                }
+            }
         };
         Camera.raspistill.stdout.on('data', dataListener);
+        Camera.log("Sent out image. Listeners: " + Camera.raspistill.stdout.listeners.length);
         try {
             Camera.raspistill.kill('SIGUSR1');
         }

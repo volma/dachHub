@@ -38,6 +38,9 @@ export class Router {
             case '/pic.jpg':
                 new camera.Camera().sendSnapshot(res);
                 break;
+            case '/test':
+                new camera.Camera().test(res);
+                break;
         }
     }
 }
